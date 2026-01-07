@@ -132,10 +132,10 @@ Goose complements Claude Code by enabling cost-effective model routing for speci
 Added to `~/.bashrc_claude`:
 
 ```bash
-use-glm        # Switch Claude Code to GLM-4.7 via OpenRouter
+use-glm        # Switch Claude Code to GLM-4.7 via Z.ai native API
 use-claude     # Switch back to Claude Opus 4.5
-use-deepseek   # Use DeepSeek Reasoner
-use-gemini     # Use Gemini 2.0 Flash
+use-deepseek   # Use DeepSeek Reasoner via OpenRouter
+use-gemini     # Use Gemini 2.0 Flash via OpenRouter
 show-model     # Display current configuration
 ```
 
@@ -149,7 +149,21 @@ use-claude     # Switch back to Claude
 claude         # Start with Opus 4.5
 ```
 
-**Note:** This routes Claude Code CLI through OpenRouter, not Goose. Use Goose directly for its native features.
+**Note:** Z.ai provides Anthropic-compatible endpoint (`https://api.z.ai/api/anthropic`) allowing Claude Code to use GLM-4.7 natively without OpenRouter routing. Uses special `ANTHROPIC_AUTH_TOKEN` header.
+
+### Z.ai API Endpoints
+
+Z.ai provides multiple endpoints for different tools:
+
+| Endpoint | Purpose | Auth Header | Use With |
+|----------|---------|-------------|----------|
+| `/api/anthropic` | Claude Code | `ANTHROPIC_AUTH_TOKEN` | Claude CLI |
+| `/api/paas/v4/chat/completions` | OpenAI-compatible | `Authorization: Bearer` | Goose CLI |
+| `/api/coding/paas/v4` | Coding-optimized | OpenRouter-style | Custom Gemini CLI |
+
+**Official Documentation:**
+- [Z.ai + Claude Code](https://docs.z.ai/scenario-example/develop-tools/claude)
+- [Z.ai + Gemini](https://docs.z.ai/scenario-example/develop-tools/gemini)
 
 ---
 
