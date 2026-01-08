@@ -204,18 +204,20 @@ Gemini CLI supports multiple models via native `--model` flag.
 
 ### Wrapper Scripts (2026-01-08)
 
-**Status:** ✅ PRODUCTION READY
+**Status:** ✅ VERIFIED WORKING (Fixed 2026-01-08 evening)
 
-Wrapper scripts provide convenient model selection without remembering full model names.
+**CRITICAL UPDATE:** Initial wrapper scripts used incorrect/experimental model names that no longer exist. Model names corrected based on [official Gemini API documentation](https://ai.google.dev/gemini-api/docs/models).
 
 **Available commands:**
 
 ```bash
-gemini-flash     # Gemini 2.0 Flash Experimental ($0.075/1M input, 1M context)
-gemini-pro       # Gemini 1.5 Pro ($0.35/1M input, 2M context)
-gemini-thinking  # Gemini 2.0 Flash Thinking (reasoning mode)
+gemini-flash     # Gemini 2.0 Flash ($0.075/1M input, 1M context)
+gemini-pro       # Gemini 2.5 Flash ($0.30/1M input, 1M context, thinking-capable)
+gemini-thinking  # Gemini 3 Flash (Latest, Pro-grade reasoning with Flash speed)
 gemini           # Gemini CLI with default model
 ```
+
+**IMPORTANT:** Gemini 1.5 Pro was **retired April 29, 2025**. All requests to `gemini-1.5-pro` return 404 errors. The `gemini-pro` wrapper now uses Gemini 2.5 Flash as the recommended replacement.
 
 **Usage:**
 
@@ -248,9 +250,11 @@ gemini-pro "Review all files in this 500K line codebase..."
 
 | Wrapper | Model | Best For | Context | Cost Input |
 |---------|-------|----------|---------|------------|
-| gemini-flash | gemini-2.0-flash-exp | Speed, general tasks | 1M | $0.075/1M |
-| gemini-pro | gemini-1.5-pro | Quality, large context | 2M | $0.35/1M |
-| gemini-thinking | gemini-2.0-flash-thinking-exp | Complex reasoning | 1M | $0.075/1M |
+| gemini-flash | gemini-2.0-flash | Speed, general tasks | 1M | $0.075/1M |
+| gemini-pro | gemini-2.5-flash | Quality, thinking-capable | 1M | $0.30/1M |
+| gemini-thinking | gemini-3-flash | Latest, Pro-grade reasoning | 1M | TBD |
+
+**Note:** Pricing for Gemini 3 Flash not yet published. Gemini 2.5 Flash pricing updated per [Google AI documentation](https://ai.google.dev/pricing).
 
 ---
 

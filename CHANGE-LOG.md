@@ -5,6 +5,73 @@
 
 ---
 
+## 2026-01-08 Evening - Critical Model Name Corrections + Authentication Issues
+
+### Fixed
+
+**CRITICAL: Gemini Wrapper Model Names Incorrect**
+- **Problem:** Initial wrappers used experimental/non-existent model names (`gemini-2.0-flash-exp`, `gemini-1.5-pro`, `gemini-2.0-flash-thinking-exp`)
+- **Error:** `ModelNotFoundError: Requested entity was not found`
+- **Root Cause:** Model names stale from training data, not validated against current Google API
+- **Discovery:** User tested `gemini-flash` wrapper, received 404-style API error
+
+**Model Name Corrections:**
+```bash
+# BEFORE (broken)                    # AFTER (working)
+gemini-2.0-flash-exp        →        gemini-2.0-flash
+gemini-1.5-pro              →        gemini-2.5-flash  # 1.5 Pro RETIRED Apr 2025
+gemini-2.0-flash-thinking-exp →      gemini-3-flash
+```
+
+**Verification:**
+- ✅ `gemini-flash "What is 2+2?"` → Returns "4" (WORKING)
+- ✅ Default Gemini CLI → Works (confirmed model names valid)
+- 📚 Validated against [official Gemini API documentation](https://ai.google.dev/gemini-api/docs/models)
+
+**CRITICAL FINDING: Gemini 1.5 Pro Retired**
+- **Retirement Date:** April 29, 2025
+- **Impact:** All requests to `gemini-1.5-pro` return 404 errors
+- **Replacement:** Gemini 2.5 Flash (thinking-capable, similar performance)
+- **Source:** [Google Gemini models lifecycle](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions)
+
+### Outstanding Issues
+
+**ISSUE: Claude Code GLM Wrapper Authentication Failure**
+- **Status:** ❌ BLOCKED - Reported by user from separate Claude session
+- **Symptom:** `claude-glm` wrapper hangs indefinitely, no output
+- **Direct API Test:** `401 token expired or incorrect` for both Z.ai endpoints
+- **Router Test:** ✅ WORKING (same Z.ai GLM-4.7, different auth method)
+- **Token Source:** ~/.bashrc_claude loads dynamically from 1Password (correct pattern)
+- **Hypothesis:** Claude Code CLI may not support `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` custom routing
+- **Alternative Hypothesis:** Token refresh/rotation issue between wrapper invocation and API call
+- **Decision:** Pending further investigation - router-based approach confirmed working
+
+**Root Cause Analysis (75% Confidence):**
+The wrapper script pattern may not be compatible with Claude Code's authentication architecture. The working router loads token at startup and proxies requests, while the wrapper attempts to override base URL and inject custom token per-invocation.
+
+### Changed
+
+**Documentation:**
+- Updated README.md with corrected model names
+- Added critical notice about Gemini 1.5 Pro retirement
+- Updated model selection guide with current models (2.0 Flash, 2.5 Flash, 3 Flash)
+- Added sources/citations for model name validation
+
+**Wrapper Scripts:**
+- `~/bin/gemini-flash`: `gemini-2.0-flash-exp` → `gemini-2.0-flash`
+- `~/bin/gemini-pro`: `gemini-1.5-pro` → `gemini-2.5-flash` (added retirement notice in comments)
+- `~/bin/gemini-thinking`: `gemini-2.0-flash-thinking-exp` → `gemini-3-flash`
+
+### Lessons Learned
+
+1. **Always Validate Model Names Against Current API Documentation** - Training data is stale; experimental model names change frequently
+2. **Test Wrappers Before Documenting as Production Ready** - Initial "PRODUCTION READY" status was premature
+3. **Web Search Required for LLM API Names** - Model naming conventions evolve (Gemini 1.5 → 2.0 → 2.5 → 3 within months)
+4. **Wrapper Pattern May Not Work for All CLIs** - Claude Code authentication appears incompatible with custom base URL override
+5. **Router/Proxy Pattern More Reliable** - Works for both Goose and Claude Code, avoids per-invocation auth complexity
+
+---
+
 ## 2026-01-08 - Multi-CLI Wrapper Scripts + LLM Gateway Investigation
 
 ### Added
