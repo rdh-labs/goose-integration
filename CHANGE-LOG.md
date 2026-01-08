@@ -5,7 +5,7 @@
 
 ---
 
-## 2026-01-08 - Claude Code Wrapper Scripts + LLM Gateway Investigation
+## 2026-01-08 - Multi-CLI Wrapper Scripts + LLM Gateway Investigation
 
 ### Added
 
@@ -14,6 +14,18 @@
 - Created `~/bin/claude-opus` wrapper script for Claude Opus 4.5
 - Deprecated `use-glm()` and `use-claude()` functions in `~/.bashrc_claude`
 - Functions now show deprecation warnings pointing to wrapper scripts
+
+**Gemini CLI Multi-Model Support:**
+- Created `~/bin/gemini-flash` wrapper for gemini-2.0-flash-exp (1M context, $0.075/1M)
+- Created `~/bin/gemini-pro` wrapper for gemini-1.5-pro (2M context, $0.35/1M)
+- Created `~/bin/gemini-thinking` wrapper for gemini-2.0-flash-thinking-exp (reasoning mode)
+- No configuration changes needed (uses existing Google OAuth)
+
+**Codex CLI Evaluation:**
+- Tested model switching capability
+- Confirmed ChatGPT account limitation: Only gpt-5.2-codex supported
+- Cannot use o3-mini, gpt-4o, or other OpenAI models with ChatGPT account
+- Decision: No wrapper needed (only one model available)
 
 **Wrapper Script Pattern:**
 - Uses `exec` to replace shell process, preventing environment pollution
@@ -26,6 +38,8 @@
 - Evaluated 3 LLM gateway options: LiteLLM, OpenRouter, Custom
 - Documented LiteLLM deployment guide with config examples
 - Decision framework matrix comparing all approaches
+- Added Gemini CLI Integration section to README.md
+- Updated model comparison tables
 
 ### Changed
 

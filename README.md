@@ -198,6 +198,62 @@ Z.ai provides multiple endpoints for different tools:
 
 ---
 
+## Gemini CLI Integration
+
+Gemini CLI supports multiple models via native `--model` flag.
+
+### Wrapper Scripts (2026-01-08)
+
+**Status:** ✅ PRODUCTION READY
+
+Wrapper scripts provide convenient model selection without remembering full model names.
+
+**Available commands:**
+
+```bash
+gemini-flash     # Gemini 2.0 Flash Experimental ($0.075/1M input, 1M context)
+gemini-pro       # Gemini 1.5 Pro ($0.35/1M input, 2M context)
+gemini-thinking  # Gemini 2.0 Flash Thinking (reasoning mode)
+gemini           # Gemini CLI with default model
+```
+
+**Usage:**
+
+```bash
+# Start interactive session with Flash model
+gemini-flash
+
+# Non-interactive query
+gemini-flash "Analyze this codebase structure..."
+
+# Reasoning mode for complex problems
+gemini-thinking "Design a distributed caching architecture..."
+
+# Large context tasks
+gemini-pro "Review all files in this 500K line codebase..."
+```
+
+**Key Features:**
+- Zero configuration overhead (uses existing Google OAuth)
+- No environment pollution (uses `exec` pattern)
+- Clean model selection without full model names
+- Works with existing MCP server configuration
+
+**Implementation:**
+- Location: `~/bin/gemini-flash`, `~/bin/gemini-pro`, `~/bin/gemini-thinking`
+- Pattern: `exec gemini --model <model> "$@"`
+- No environment variables needed (OAuth authenticated)
+
+**Model Selection Guide:**
+
+| Wrapper | Model | Best For | Context | Cost Input |
+|---------|-------|----------|---------|------------|
+| gemini-flash | gemini-2.0-flash-exp | Speed, general tasks | 1M | $0.075/1M |
+| gemini-pro | gemini-1.5-pro | Quality, large context | 2M | $0.35/1M |
+| gemini-thinking | gemini-2.0-flash-thinking-exp | Complex reasoning | 1M | $0.075/1M |
+
+---
+
 ## Usage Examples
 
 ### Interactive Session
@@ -376,12 +432,14 @@ goose:
 
 ## Session History
 
-- **2026-01-08:** Claude Code wrapper scripts + LLM gateway investigation
-  - Created `~/bin/claude-glm` and `~/bin/claude-opus` wrapper scripts
+- **2026-01-08:** Multi-CLI wrapper scripts + LLM gateway investigation
+  - Created `~/bin/claude-glm` and `~/bin/claude-opus` wrapper scripts (Claude Code)
+  - Created `~/bin/gemini-flash`, `~/bin/gemini-pro`, `~/bin/gemini-thinking` (Gemini CLI)
   - Deprecated `use-glm()` and `use-claude()` functions (caused auth conflicts)
+  - Evaluated Codex CLI (limited to gpt-5.2-codex on ChatGPT account, no wrapper needed)
   - Documented comprehensive LLM gateway investigation (LiteLLM, OpenRouter, Custom)
   - Decision: Defer gateway deployment, wrapper scripts provide 90% of functionality
-  - Status: Wrapper scripts production ready, zero infrastructure overhead
+  - Status: Claude + Gemini wrappers production ready, zero infrastructure overhead
 
 - **2026-01-07:** Initial setup complete
   - Installed Goose CLI v1.19.0
