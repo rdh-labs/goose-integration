@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-01-08 - Fixed Z.ai Endpoint Configuration (ISSUE-063 Resolution)
+
+### Changed
+
+**Goose Config Endpoint Fix (2026-01-08):**
+- **Previous:** `GOOSE_PROVIDER: openai` with `/api/paas/v4/chat/completions` endpoint
+- **Current:** `GOOSE_PROVIDER: anthropic` with `/api/anthropic` endpoint
+- **Rationale:** Z.ai Coding Plan requires tool-specific Anthropic endpoints (per https://docs.z.ai/devpack/tool/goose)
+- **Impact:** Resolves 1113 "Insufficient balance" error - wrong endpoint required separate API Plan
+
+**README.md Updates:**
+- Updated primary configuration example to use Anthropic provider
+- Added note about Coding Plan vs API Plan endpoint requirements
+- Updated verification test status to "awaiting user testing"
+- Added reference to official Z.ai Goose documentation
+
+**ISSUE-063 Resolution:**
+- Identified root cause: Used `/api/paas/v4` (requires API Plan) instead of `/api/anthropic` (covered by Coding Plan)
+- Updated issue with detailed resolution steps and testing commands
+- Status changed to: Awaiting user testing
+
+### Governance
+
+**Lessons Learned:** 1 added to `~/dev/infrastructure/dev-env-config/lessons.md`
+- Z.ai Coding Plan Requires Tool-Specific API Endpoints
+
+**Related:**
+- ISSUE-063: Z.ai Account Not Activated Despite Year's Subscription (RESOLVED)
+- Z.ai Support ticket response (2026-01-08)
+- Z.ai Goose docs: https://docs.z.ai/devpack/tool/goose
+
+---
+
 ## 2026-01-07 - Initial Setup & Multi-Provider Configuration
 
 ### Added

@@ -39,16 +39,19 @@ goose --help
 
 **Location:** `~/.config/goose/config.yaml`
 
-**Default provider:** Z.ai GLM-4.7 via OpenAI-compatible endpoint
+**Default provider:** Z.ai GLM-4.7 via Anthropic-compatible endpoint (official Goose support)
+
+**Reference:** [Z.ai Goose Documentation](https://docs.z.ai/devpack/tool/goose)
 
 ```yaml
-GOOSE_PROVIDER: openai
-GOOSE_MODEL: glm-4.7
+GOOSE_PROVIDER: anthropic
+GOOSE_MODEL: GLM-4.7
 
-OPENAI_API_KEY: ${ZAI_API_KEY}
-OPENAI_HOST: https://api.z.ai
-OPENAI_BASE_PATH: /api/paas/v4/chat/completions
+ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+ANTHROPIC_API_KEY: ${ZAI_API_KEY}
 ```
+
+**Important:** Must use `/api/anthropic` endpoint for Coding Plan access. The `/api/paas/v4/chat/completions` endpoint requires a separate API plan.
 
 ### API Keys
 
@@ -215,9 +218,11 @@ source ~/.bashrc_claude
 goose run --text "What is 2+2? Respond with just the number." --no-session --quiet
 ```
 
-**Expected:** Rate limit error (insufficient balance) - confirms config works, needs credit
+**Expected:** `4` (now that Anthropic endpoint is configured)
 
-**Status:** ⚠️ Z.ai account needs funding
+**Status:** 🔧 Configuration fixed 2026-01-08 - awaiting user testing
+
+**Note:** Previous 1113 error was due to wrong endpoint (`/api/paas/v4` requires separate API plan). Now using `/api/anthropic` which is covered by Coding Plan.
 
 ### Test DeepSeek (Verified Working)
 
