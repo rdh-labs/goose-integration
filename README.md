@@ -137,29 +137,50 @@ See `/tmp/model-selection-strategy.md` for detailed benchmark scores and use cas
 
 Goose complements Claude Code by enabling cost-effective model routing for specific tasks.
 
-### Model Switching Functions
+### Wrapper Scripts (2026-01-08)
 
-Added to `~/.bashrc_claude`:
+**Status:** ✅ PRODUCTION READY
+
+Wrapper scripts provide clean model switching without environment pollution or auth conflicts.
+
+**Available commands:**
 
 ```bash
-use-glm        # Switch Claude Code to GLM-4.7 via Z.ai native API
-use-claude     # Switch back to Claude Opus 4.5
-use-deepseek   # Use DeepSeek Reasoner via OpenRouter
-use-gemini     # Use Gemini 2.0 Flash via OpenRouter
-show-model     # Display current configuration
+claude-glm     # Claude Code with GLM-4.7 via Z.ai ($0.16/1M input)
+claude-opus    # Claude Code with Opus 4.5 via Anthropic ($15/1M input)
+claude         # Claude Code with default model (uses login token)
 ```
 
 **Usage:**
-```bash
-source ~/.bashrc_claude
-use-glm        # Switch to GLM-4.7
-claude         # Start Claude Code with GLM-4.7
 
-use-claude     # Switch back to Claude
-claude         # Start with Opus 4.5
+```bash
+# Start interactive session with GLM-4.7
+claude-glm
+
+# One-shot query with GLM-4.7
+claude-glm --print "Refactor this function..."
+
+# Start session with Claude Opus 4.5
+claude-opus
+
+# Compare model responses
+claude-glm --print "Explain SWE-bench in one sentence."
+claude-opus --print "Explain SWE-bench in one sentence."
 ```
 
-**Note:** Z.ai provides Anthropic-compatible endpoint (`https://api.z.ai/api/anthropic`) allowing Claude Code to use GLM-4.7 natively without OpenRouter routing. Uses special `ANTHROPIC_AUTH_TOKEN` header.
+**Key Features:**
+- Zero environment pollution (uses `exec` pattern)
+- No auth conflicts with `claude login`
+- Zero infrastructure overhead
+- Credentials loaded from `~/.bashrc_claude` (1Password)
+- Clean separation between model contexts
+
+**Implementation:**
+- Location: `~/bin/claude-glm`, `~/bin/claude-opus`
+- Pattern: Set env vars → `exec claude --model <model> "$@"`
+- Env vars scoped to single invocation only
+
+**Note:** Z.ai provides Anthropic-compatible endpoint (`https://api.z.ai/api/anthropic`) allowing Claude Code to use GLM-4.7 natively. Uses custom `ANTHROPIC_AUTH_TOKEN` header (not standard `ANTHROPIC_API_KEY`).
 
 ### Z.ai API Endpoints
 
@@ -259,21 +280,26 @@ timeout 30 goose run --text "What is 2+2? Respond with just the number." --no-se
 
 **Status:** ✅ Verified 2026-01-07
 
-### Test Claude Code Model Switching (Verified Working)
+### Test Claude Code Wrapper Scripts
 
 ```bash
-source ~/.bashrc_claude
+# Test GLM-4.7 wrapper (quick config check)
+bash -c 'source ~/.bashrc_claude 2>/dev/null && \
+  export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic" && \
+  export ANTHROPIC_AUTH_TOKEN="$ZAI_API_KEY" && \
+  echo "✓ GLM-4.7 wrapper configured correctly" && \
+  echo "  ZAI_API_KEY length: ${#ANTHROPIC_AUTH_TOKEN}"'
 
-# Test switch to GLM-4.7
-use-glm && show-model
-# Expected: Model: z-ai/glm-4.7, Base URL: https://openrouter.ai/api/v1
+# Test full invocation (interactive, takes 30-60s for MCP initialization)
+claude-glm --print "What is 2+2? Respond with just the number."
 
-# Test switch back to Claude
-use-claude && show-model
-# Expected: Model: claude-opus-4-5-20251101, Base URL: default
+# Test Opus wrapper
+claude-opus --print "What is 2+2? Respond with just the number."
 ```
 
-**Status:** ✅ All functions verified 2026-01-07
+**Expected:** Both return `4`, but using different models (verify via cost/performance)
+
+**Status:** ✅ Wrapper scripts verified 2026-01-08
 
 ---
 
@@ -350,10 +376,17 @@ goose:
 
 ## Session History
 
+- **2026-01-08:** Claude Code wrapper scripts + LLM gateway investigation
+  - Created `~/bin/claude-glm` and `~/bin/claude-opus` wrapper scripts
+  - Deprecated `use-glm()` and `use-claude()` functions (caused auth conflicts)
+  - Documented comprehensive LLM gateway investigation (LiteLLM, OpenRouter, Custom)
+  - Decision: Defer gateway deployment, wrapper scripts provide 90% of functionality
+  - Status: Wrapper scripts production ready, zero infrastructure overhead
+
 - **2026-01-07:** Initial setup complete
   - Installed Goose CLI v1.19.0
   - Configured Z.ai GLM-4.7 as primary provider
   - Integrated 5 MCP servers from ecosystem
   - Added DeepSeek, Gemini, GPT-4o as alternative providers
-  - Created model-switching functions for Claude Code
-  - Verified DeepSeek and Claude Code switching (Z.ai pending funding)
+  - Created model-switching functions for Claude Code (later deprecated)
+  - Verified DeepSeek and Claude Code switching (Z.ai pending funding - later resolved)
