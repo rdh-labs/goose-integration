@@ -39,19 +39,26 @@ goose --help
 
 **Location:** `~/.config/goose/config.yaml`
 
-**Default provider:** Z.ai GLM-4.7 via Anthropic-compatible endpoint (official Goose support)
+**Default provider:** Z.ai GLM-4.7 via OpenAI-compatible endpoint
 
-**Reference:** [Z.ai Goose Documentation](https://docs.z.ai/devpack/tool/goose)
+**Status:** ✅ WORKING (2026-01-08)
 
 ```yaml
-GOOSE_PROVIDER: anthropic
-GOOSE_MODEL: GLM-4.7
+GOOSE_PROVIDER: openai
+GOOSE_MODEL: glm-4.7
 
-ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
-ANTHROPIC_API_KEY: ${ZAI_API_KEY}
+OPENAI_API_KEY: ${ZAI_API_KEY}
+OPENAI_HOST: https://api.z.ai
+OPENAI_BASE_PATH: /api/coding/paas/v4/chat/completions
 ```
 
-**Important:** Must use `/api/anthropic` endpoint for Coding Plan access. The `/api/paas/v4/chat/completions` endpoint requires a separate API plan.
+**CRITICAL:** `OPENAI_BASE_PATH` must include `/chat/completions` suffix. Goose does not append this automatically for non-standard endpoints.
+
+**Environment variables:** If config file fails to load `${ZAI_API_KEY}`, use explicit env vars:
+```bash
+source ~/.bashrc_claude  # Loads ZAI_API_KEY from 1Password
+goose run --text "Your task"
+```
 
 ### API Keys
 
@@ -218,11 +225,23 @@ source ~/.bashrc_claude
 goose run --text "What is 2+2? Respond with just the number." --no-session --quiet
 ```
 
-**Expected:** `4` (now that Anthropic endpoint is configured)
+**Expected:** `4`
 
-**Status:** 🔧 Configuration fixed 2026-01-08 - awaiting user testing
+**Status:** ✅ VERIFIED WORKING (2026-01-08)
 
-**Note:** Previous 1113 error was due to wrong endpoint (`/api/paas/v4` requires separate API plan). Now using `/api/anthropic` which is covered by Coding Plan.
+**Root cause of previous failures:**
+1. Wrong API key in 1Password (resolved - user manually updated)
+2. Missing `/chat/completions` in `OPENAI_BASE_PATH` (resolved)
+
+**Alternative (explicit env vars):**
+```bash
+GOOSE_PROVIDER=openai \
+OPENAI_API_KEY="$ZAI_API_KEY" \
+OPENAI_HOST=https://api.z.ai \
+OPENAI_BASE_PATH=/api/coding/paas/v4/chat/completions \
+GOOSE_MODEL=glm-4.7 \
+goose run --text "Your task"
+```
 
 ### Test DeepSeek (Verified Working)
 

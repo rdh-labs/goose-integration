@@ -5,36 +5,61 @@
 
 ---
 
-## 2026-01-08 - Fixed Z.ai Endpoint Configuration (ISSUE-063 Resolution)
+## 2026-01-08 - RESOLVED: Z.ai Integration Working (ISSUE-063)
+
+### Fixed
+
+**Critical Fix: OPENAI_BASE_PATH Must Include Full Endpoint**
+- **Problem:** Goose was hitting `/v4` instead of `/api/coding/paas/v4/chat/completions`
+- **Root Cause:** Goose does NOT append `/chat/completions` automatically for non-standard endpoints
+- **Solution:** Set `OPENAI_BASE_PATH: /api/coding/paas/v4/chat/completions` (full path)
+- **Status:** ✅ VERIFIED WORKING with environment variables
+
+**Configuration (WORKING):**
+```yaml
+GOOSE_PROVIDER: openai
+OPENAI_HOST: https://api.z.ai
+OPENAI_BASE_PATH: /api/coding/paas/v4/chat/completions
+OPENAI_API_KEY: ${ZAI_API_KEY}
+```
+
+**Two Issues Resolved:**
+1. **Wrong API key in 1Password** - User manually updated from old key to new key
+2. **Incomplete endpoint path** - Added `/chat/completions` suffix to BASE_PATH
+
+**Verification:**
+```bash
+# Works with environment variables
+GOOSE_PROVIDER=openai OPENAI_API_KEY="$ZAI_API_KEY" \
+OPENAI_HOST=https://api.z.ai \
+OPENAI_BASE_PATH=/api/coding/paas/v4/chat/completions \
+GOOSE_MODEL=glm-4.7 \
+goose run --text "What is 2+2? Just the number." --no-session --quiet
+# Returns: 4 ✅
+```
 
 ### Changed
 
-**Goose Config Endpoint Fix (2026-01-08):**
-- **Previous:** `GOOSE_PROVIDER: openai` with `/api/paas/v4/chat/completions` endpoint
-- **Current:** `GOOSE_PROVIDER: anthropic` with `/api/anthropic` endpoint
-- **Rationale:** Z.ai Coding Plan requires tool-specific Anthropic endpoints (per https://docs.z.ai/devpack/tool/goose)
-- **Impact:** Resolves 1113 "Insufficient balance" error - wrong endpoint required separate API Plan
+**README.md:**
+- Updated configuration to reflect working setup
+- Added critical note about `/chat/completions` requirement
+- Marked Z.ai as ✅ VERIFIED WORKING
+- Documented both config file and env var approaches
 
-**README.md Updates:**
-- Updated primary configuration example to use Anthropic provider
-- Added note about Coding Plan vs API Plan endpoint requirements
-- Updated verification test status to "awaiting user testing"
-- Added reference to official Z.ai Goose documentation
-
-**ISSUE-063 Resolution:**
-- Identified root cause: Used `/api/paas/v4` (requires API Plan) instead of `/api/anthropic` (covered by Coding Plan)
-- Updated issue with detailed resolution steps and testing commands
-- Status changed to: Awaiting user testing
+**~/.config/goose/config.yaml:**
+- Updated OPENAI_BASE_PATH to include full endpoint
 
 ### Governance
 
-**Lessons Learned:** 1 added to `~/dev/infrastructure/dev-env-config/lessons.md`
-- Z.ai Coding Plan Requires Tool-Specific API Endpoints
+**Lessons Learned:** Added to `~/dev/infrastructure/dev-env-config/lessons.md`
+- Goose CLI Does Not Append /chat/completions for Non-Standard Endpoints
+
+**Issues Updated:**
+- ISSUE-063: Status → RESOLVED (2026-01-08)
 
 **Related:**
-- ISSUE-063: Z.ai Account Not Activated Despite Year's Subscription (RESOLVED)
 - Z.ai Support ticket response (2026-01-08)
-- Z.ai Goose docs: https://docs.z.ai/devpack/tool/goose
+- Session handoff: `~/.claude/SESSION-HANDOFF-2026-01-08-Z-AI-INTEGRATION.md`
 
 ---
 
