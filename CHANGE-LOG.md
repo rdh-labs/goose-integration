@@ -5,6 +5,78 @@
 
 ---
 
+## 2026-01-08 - Claude Code Wrapper Scripts + LLM Gateway Investigation
+
+### Added
+
+**Claude Code Multi-Model Support:**
+- Created `~/bin/claude-glm` wrapper script for GLM-4.7 via Z.ai
+- Created `~/bin/claude-opus` wrapper script for Claude Opus 4.5
+- Deprecated `use-glm()` and `use-claude()` functions in `~/.bashrc_claude`
+- Functions now show deprecation warnings pointing to wrapper scripts
+
+**Wrapper Script Pattern:**
+- Uses `exec` to replace shell process, preventing environment pollution
+- Scopes environment variables to single invocation
+- Eliminates auth conflicts with `claude login` token
+- Zero infrastructure overhead
+
+**Documentation:**
+- Created comprehensive `LLM-GATEWAY-INVESTIGATION.md` (437 lines)
+- Evaluated 3 LLM gateway options: LiteLLM, OpenRouter, Custom
+- Documented LiteLLM deployment guide with config examples
+- Decision framework matrix comparing all approaches
+
+### Changed
+
+**~/.bashrc_claude:**
+- `use-glm()` now shows deprecation warning
+- `use-claude()` now shows deprecation warning
+- Both functions point users to wrapper scripts
+
+### Fixed
+
+**RESOLVED: Claude Code Auth Conflicts (ISSUE-063 Part 2)**
+- **Problem:** Environment-based model switching caused auth conflicts
+- **Root Cause:** Global env vars conflicted with `claude login` token
+- **Solution:** Wrapper scripts with `exec` pattern scope vars to single invocation
+- **Status:** ✅ VERIFIED - No auth conflicts
+
+### Governance
+
+**Decisions Logged:**
+- DEC-082: Wrapper Scripts for Claude Code Model Switching (ACCEPTED)
+- DEC-083: Deferred LLM Gateway Deployment Pending Validation (ACCEPTED)
+
+**Lessons Learned:** 3 added to `~/dev/infrastructure/dev-env-config/lessons.md`
+- Claude Code Model Selection is Hardcoded (wrapper scripts solution)
+- Environment Variable Scoping via exec Prevents Auth Conflicts
+- Z.ai Uses Custom ANTHROPIC_AUTH_TOKEN Header
+
+**Ideas Generated:** 4 added to `~/dev/infrastructure/dev-env-docs/IDEAS-BACKLOG.md`
+- IDEA-133: Universal Model Switching CLI for All AI Agents
+- IDEA-134: LLM Gateway Experimental Deployment in Sandbox
+- IDEA-135: Model Cost Tracking Dashboard
+- IDEA-136: Multi-Model Session Transcript Tagging
+
+**Session Handoff:**
+- Updated `~/.claude/SESSION-HANDOFF-2026-01-08-Z-AI-INTEGRATION.md`
+- All 3 issues marked RESOLVED (API key, Goose CLI, Claude Code auth)
+
+### Outstanding
+
+**User Testing:**
+- Test `claude-glm` wrapper in real-world use (2-4 weeks)
+- Evaluate if `/model` command switching is missed
+- Decide on LLM gateway deployment (optional)
+
+**Optional Future Work:**
+- Deploy LiteLLM to `~/dev/sandbox/litellm-test/` for trial (IDEA-134)
+- Implement cost tracking dashboard (IDEA-135)
+- Add model tagging to transcript export (IDEA-136)
+
+---
+
 ## 2026-01-08 - RESOLVED: Z.ai Integration Working (ISSUE-063)
 
 ### Fixed
