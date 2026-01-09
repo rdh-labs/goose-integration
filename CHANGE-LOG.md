@@ -94,6 +94,8 @@ claude-glm  # May still fail if Z.ai requires transformed requests
 
 **Summary:** Three distinct issues prevent direct wrapper from working. Router solves all three by loading tokens once at startup AND applying OpenAI transformer to requests.
 
+**Cross-Reference:** Parallel investigation documented in `~/.claude/SESSION-HANDOFF-2026-01-08-Z-AI-INTEGRATION.md` (ISSUE #5) confirms all three root causes with additional test commands and recommendations.
+
 ### Changed
 
 **Documentation:**
