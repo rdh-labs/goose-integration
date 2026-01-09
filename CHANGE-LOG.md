@@ -62,17 +62,37 @@ gemini-2.0-flash-thinking-exp →      gemini-3-flash
 - **Hypothesis:** `op read` may require interactive authentication or daemon connection that fails in subprocess context
 - **Status:** ❌ UNRESOLVED - 1Password CLI appears incompatible with wrapper subprocess pattern
 
-**Recommended Solution:**
-Use router-based approach OR pre-load token in parent shell before invoking wrapper:
-```bash
-# Option 1: Router (recommended)
-export ANTHROPIC_BASE_URL="http://localhost:3456"
-claude --model opus  # Router handles Z.ai routing
+**ROOT CAUSE #3 (DISCOVERED): Z.ai Requires Request Transformation**
+- **Problem:** Direct API calls fail with 401 even when token loads successfully
+- **Evidence:** Separate investigation report shows:
+  - Token loads correctly (prefix: 7cc3120bafad47878121, length: 49)
+  - Router test: ✅ WORKS (`curl http://localhost:3456/v1/chat/completions`)
+  - Direct API test: ❌ FAILS (`curl https://api.z.ai/api/coding/paas/v4/chat/completions`)
+  - Tested both endpoints: `/api/coding/paas/v4` and `/api/anthropic` - both return 401
+- **Key Discovery:** Router config uses OpenAI transformer:
+  ```json
+  {
+    "transformer": { "use": ["openai"] }
+  }
+  ```
+- **Hypothesis:** Router applies OpenAI-compatible request formatting that Z.ai requires
+- **Impact:** Direct API calls (and thus wrappers) may need specific header/body format
+- **Status:** ❌ UNRESOLVED - Transformer behavior needs investigation
+- **Reference:** Claude Code investigation report (2026-01-08 evening)
 
-# Option 2: Pre-load token before wrapper
+**Recommended Solution:**
+Router-based approach is STRONGLY RECOMMENDED due to three compounding issues:
+```bash
+# RECOMMENDED: Use router (handles token loading + request transformation)
+export ANTHROPIC_BASE_URL="http://localhost:3456"
+claude --model opus  # Router handles Z.ai routing with OpenAI transformer
+
+# ALTERNATIVE: Pre-load token (only solves ROOT CAUSE #2, not #3)
 export ZAI_API_KEY="$(op read 'op://Development/Z.ai API/credential')"
-claude-glm  # Wrapper uses existing $ZAI_API_KEY
+claude-glm  # May still fail if Z.ai requires transformed requests
 ```
+
+**Summary:** Three distinct issues prevent direct wrapper from working. Router solves all three by loading tokens once at startup AND applying OpenAI transformer to requests.
 
 ### Changed
 
@@ -95,7 +115,8 @@ claude-glm  # Wrapper uses existing $ZAI_API_KEY
 3. **Web Search Required for LLM API Names** - Model naming conventions evolve (Gemini 1.5 → 2.0 → 2.5 → 3 within months)
 4. **Claude Code --model Flag Only Accepts Standard Aliases** - Custom model names require environment variable mapping (e.g., `ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"` then `--model opus`)
 5. **1Password CLI Dynamic Loading Incompatible with Wrapper Subprocess Pattern** - `op read` times out when called from `exec` wrapper; router pattern loads once at startup (works)
-6. **Router/Proxy Pattern More Reliable Than Environment Variable Override** - Works for both Goose and Claude Code, avoids per-invocation auth complexity
+6. **Z.ai Requires Request Transformation (OpenAI Format)** - Direct API calls fail with valid token; router succeeds because it applies OpenAI transformer to requests
+7. **Router/Proxy Pattern More Reliable Than Environment Variable Override** - Solves three issues: token loading, request transformation, and auth complexity
 
 ---
 
