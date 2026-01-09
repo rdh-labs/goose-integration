@@ -36,18 +36,43 @@ gemini-2.0-flash-thinking-exp →      gemini-3-flash
 
 ### Outstanding Issues
 
-**ISSUE: Claude Code GLM Wrapper Authentication Failure**
-- **Status:** ❌ BLOCKED - Reported by user from separate Claude session
-- **Symptom:** `claude-glm` wrapper hangs indefinitely, no output
+**ISSUE: Claude Code GLM Wrapper Authentication Failure - ROOT CAUSE IDENTIFIED**
+- **Status:** 🔍 ROOT CAUSE IDENTIFIED - Two distinct issues discovered
+- **Original Symptom:** `claude-glm` wrapper hangs indefinitely, no output
 - **Direct API Test:** `401 token expired or incorrect` for both Z.ai endpoints
 - **Router Test:** ✅ WORKING (same Z.ai GLM-4.7, different auth method)
-- **Token Source:** ~/.bashrc_claude loads dynamically from 1Password (correct pattern)
-- **Hypothesis:** Claude Code CLI may not support `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` custom routing
-- **Alternative Hypothesis:** Token refresh/rotation issue between wrapper invocation and API call
-- **Decision:** Pending further investigation - router-based approach confirmed working
 
-**Root Cause Analysis (75% Confidence):**
-The wrapper script pattern may not be compatible with Claude Code's authentication architecture. The working router loads token at startup and proxies requests, while the wrapper attempts to override base URL and inject custom token per-invocation.
+**ROOT CAUSE #1: Invalid Model Flag Syntax**
+- **Problem:** Wrapper used `--model glm-4.7` (invalid - Claude Code doesn't accept custom model names)
+- **Evidence:** `claude --help` shows `--model` accepts: standard aliases ('opus', 'sonnet', 'haiku') OR full Anthropic names
+- **Discovery:** Web search of [Z.ai Claude Code documentation](https://docs.z.ai/scenario-example/develop-tools/claude) revealed correct pattern
+- **Solution:** Map standard alias to GLM via environment variable:
+  ```bash
+  export ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"
+  exec claude --model opus "$@"  # NOT 'glm-4.7'
+  ```
+- **Status:** ✅ FIXED in wrapper script (2026-01-08)
+
+**ROOT CAUSE #2: 1Password CLI Timeout During Wrapper Execution**
+- **Problem:** `source ~/.bashrc_claude` hangs indefinitely when called from wrapper
+- **Evidence:** `timeout 5 op read "op://Development/Z.ai API/credential"` times out (killed after 2m)
+- **Impact:** Wrapper never gets past token loading, appears to hang
+- **Why Router Works:** Router loads token ONCE at startup, then proxies all requests
+- **Why Wrapper Fails:** Wrapper attempts `op read` on EVERY invocation (dynamic loading)
+- **Hypothesis:** `op read` may require interactive authentication or daemon connection that fails in subprocess context
+- **Status:** ❌ UNRESOLVED - 1Password CLI appears incompatible with wrapper subprocess pattern
+
+**Recommended Solution:**
+Use router-based approach OR pre-load token in parent shell before invoking wrapper:
+```bash
+# Option 1: Router (recommended)
+export ANTHROPIC_BASE_URL="http://localhost:3456"
+claude --model opus  # Router handles Z.ai routing
+
+# Option 2: Pre-load token before wrapper
+export ZAI_API_KEY="$(op read 'op://Development/Z.ai API/credential')"
+claude-glm  # Wrapper uses existing $ZAI_API_KEY
+```
 
 ### Changed
 
@@ -61,14 +86,16 @@ The wrapper script pattern may not be compatible with Claude Code's authenticati
 - `~/bin/gemini-flash`: `gemini-2.0-flash-exp` → `gemini-2.0-flash`
 - `~/bin/gemini-pro`: `gemini-1.5-pro` → `gemini-2.5-flash` (added retirement notice in comments)
 - `~/bin/gemini-thinking`: `gemini-2.0-flash-thinking-exp` → `gemini-3-flash`
+- `~/bin/claude-glm`: Fixed model flag syntax (`--model glm-4.7` → `--model opus` with `ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"` mapping)
 
 ### Lessons Learned
 
 1. **Always Validate Model Names Against Current API Documentation** - Training data is stale; experimental model names change frequently
 2. **Test Wrappers Before Documenting as Production Ready** - Initial "PRODUCTION READY" status was premature
 3. **Web Search Required for LLM API Names** - Model naming conventions evolve (Gemini 1.5 → 2.0 → 2.5 → 3 within months)
-4. **Wrapper Pattern May Not Work for All CLIs** - Claude Code authentication appears incompatible with custom base URL override
-5. **Router/Proxy Pattern More Reliable** - Works for both Goose and Claude Code, avoids per-invocation auth complexity
+4. **Claude Code --model Flag Only Accepts Standard Aliases** - Custom model names require environment variable mapping (e.g., `ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"` then `--model opus`)
+5. **1Password CLI Dynamic Loading Incompatible with Wrapper Subprocess Pattern** - `op read` times out when called from `exec` wrapper; router pattern loads once at startup (works)
+6. **Router/Proxy Pattern More Reliable Than Environment Variable Override** - Works for both Goose and Claude Code, avoids per-invocation auth complexity
 
 ---
 

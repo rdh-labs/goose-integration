@@ -139,17 +139,21 @@ Goose complements Claude Code by enabling cost-effective model routing for speci
 
 ### Wrapper Scripts (2026-01-08)
 
-**Status:** ✅ PRODUCTION READY
+**Status:** ⚠️ PARTIAL - Gemini wrappers working, Claude wrapper requires workaround
 
 Wrapper scripts provide clean model switching without environment pollution or auth conflicts.
 
 **Available commands:**
 
 ```bash
-claude-glm     # Claude Code with GLM-4.7 via Z.ai ($0.16/1M input)
+claude-glm     # Claude Code with GLM-4.7 via Z.ai ($0.16/1M input) - SEE WORKAROUND BELOW
 claude-opus    # Claude Code with Opus 4.5 via Anthropic ($15/1M input)
 claude         # Claude Code with default model (uses login token)
 ```
+
+**IMPORTANT: Claude GLM Wrapper Requires Pre-Loaded Token**
+
+The `claude-glm` wrapper has been fixed for model flag syntax but still requires workaround for 1Password CLI timeout issue. See [Troubleshooting](#troubleshooting) section below for details.
 
 **Usage:**
 
@@ -383,6 +387,24 @@ claude-opus --print "What is 2+2? Respond with just the number."
 - 1Password CLI not authenticated
 - **Fix:** `source ~/.bashrc_claude` (loads service account token)
 
+**5. Claude GLM wrapper hangs indefinitely**
+- **Root Cause #1:** Invalid model flag syntax (FIXED - wrapper now uses `--model opus` with `ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"`)
+- **Root Cause #2:** 1Password CLI timeout in subprocess (UNRESOLVED - `op read` hangs when called from wrapper)
+- **Workaround Option 1 (Recommended):** Use router-based approach:
+  ```bash
+  # Start router in background (loads token once)
+  export ANTHROPIC_BASE_URL="http://localhost:3456"
+  claude --model opus  # Router handles Z.ai routing
+  ```
+- **Workaround Option 2:** Pre-load token in parent shell:
+  ```bash
+  # Load token once before invoking wrapper
+  export ZAI_API_KEY="$(op read 'op://Development/Z.ai API/credential')"
+  claude-glm  # Wrapper uses existing $ZAI_API_KEY instead of calling op read
+  ```
+- **Why This Happens:** Wrapper attempts `op read` on every invocation (subprocess context), which times out. Router loads token once at startup.
+- **Status:** Model flag fixed (2026-01-08), 1Password issue unresolved - router recommended
+
 ### Debug Mode
 
 ```bash
@@ -391,6 +413,9 @@ GOOSE_LOG_LEVEL=debug goose run --text "test"
 
 # Check MCP server status
 goose mcp --help
+
+# Test Claude Code environment variable support
+claude --help | grep -A 5 "model"
 ```
 
 ---
