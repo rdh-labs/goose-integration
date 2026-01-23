@@ -496,6 +496,44 @@ claude --help | grep -A 5 "model"
 
 ---
 
+## Validation
+
+**Test all documented examples:**
+
+```bash
+# Quick test (Z.ai only, ~$0.0001)
+cd ~/dev/infrastructure/goose-integration/scripts
+./validate-examples.sh --zai-only
+
+# Full test (all providers, ~$0.01-0.05)
+./validate-examples.sh
+
+# Skip Gemini
+./validate-examples.sh --skip-gemini
+```
+
+**What it validates:**
+- ✓ Wrapper function works (Z.ai default)
+- ✓ GOOSE_DISABLE_KEYRING=1 is effective (WSL2 compatibility)
+- ✓ Multi-model examples work (DeepSeek, GPT-4o, Gemini)
+- ✓ Host/path overrides work correctly
+- ✓ API keys are loaded and valid
+
+**Output:**
+- Color-coded test results (✓/✗/⚠)
+- Detailed log: `scripts/validation-YYYYMMDD-HHMMSS.log`
+- Exit code 0 if all pass, 1 if any fail
+
+**When to run:**
+- After documentation changes (use `--zai-only`)
+- Before recommending setup to others (full test)
+- After Goose CLI updates (full test)
+- Periodic regression check (weekly, `--zai-only`)
+
+**See:** `scripts/README.md` for detailed usage and troubleshooting.
+
+---
+
 ## Related Documentation
 
 - Model Selection Strategy: `/tmp/model-selection-strategy.md`
