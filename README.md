@@ -56,8 +56,8 @@ OPENAI_BASE_PATH: /api/coding/paas/v4/chat/completions
 
 **How authentication works:**
 1. Config file expects `OPENAI_API_KEY` as environment variable
-2. Wrapper function in `~/.bashrc_claude` sets `OPENAI_API_KEY="${OPENAI_API_KEY:-$ZAI_API_KEY}"`
-3. Defaults to Z.ai key, but respects caller-provided `OPENAI_API_KEY` for multi-model usage
+2. Wrapper function `goose()` in `~/.bashrc_claude` sets `OPENAI_API_KEY="$ZAI_API_KEY"`
+3. Wrapper is for Z.ai only; for other providers, call the binary directly (see [Multi-Model Setup](#multi-model-setup))
 4. See [WSL2 Keyring Configuration](#wsl2-keyring-configuration) for wrapper details
 
 ### API Keys
@@ -92,17 +92,17 @@ DBus error: org.freedesktop.secrets was not provided by any .service files
 # Disable keyring storage (WSL2 compatibility)
 export GOOSE_DISABLE_KEYRING=1
 
-# Wrapper function sets API key (defaults to Z.ai, respects caller override)
+# Wrapper function uses Z.ai by default
 goose() {
-  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="${OPENAI_API_KEY:-$ZAI_API_KEY}" /home/ichardart/.local/bin/goose "$@"
+  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /home/ichardart/.local/bin/goose "$@"
 }
 ```
 
 **Why this is needed:**
 1. **Keyring caching** - Goose stores credentials in system keyring, not just environment variables
 2. **WSL2 limitation** - DBus secrets service unavailable in WSL2 environment
-3. **Wrapper function** - Ensures both `GOOSE_DISABLE_KEYRING=1` and `OPENAI_API_KEY` are set for every invocation
-4. **Multi-model support** - Uses `${OPENAI_API_KEY:-$ZAI_API_KEY}` pattern to default to Z.ai but respect caller overrides
+3. **Wrapper simplicity** - Sets `OPENAI_API_KEY="$ZAI_API_KEY"` for default Z.ai usage
+4. **Multi-model usage** - For other providers (DeepSeek, GPT-4o), call binary directly with `GOOSE_DISABLE_KEYRING=1`
 
 **Verification:**
 ```bash
@@ -148,26 +148,30 @@ Goose integrates with 5 key MCP servers from the ecosystem:
 Goose supports multiple providers via environment variables:
 
 ```bash
-# Z.ai GLM-4.7 (default - already configured)
+# Z.ai GLM-4.7 (default - uses wrapper function)
 goose run --text "Your task"
 
-# DeepSeek Reasoner (complex logic)
+# DeepSeek Reasoner (call binary directly, not wrapper)
+GOOSE_DISABLE_KEYRING=1 \
 GOOSE_PROVIDER=openai \
 OPENAI_API_KEY="$DEEPSEEK_API_KEY" \
 OPENAI_HOST=https://api.deepseek.com \
 OPENAI_BASE_PATH=/v1/chat/completions \
 GOOSE_MODEL=deepseek-reasoner \
-goose run --text "Complex reasoning task"
+/home/ichardart/.local/bin/goose run --text "Complex reasoning task"
 
-# Gemini 2.0 Flash (large context, speed)
+# Gemini 2.0 Flash (call binary directly)
+GOOSE_DISABLE_KEYRING=1 \
 GOOSE_PROVIDER=gemini \
 GOOSE_MODEL=gemini-2.0-flash-exp \
-goose run --text "Large codebase analysis"
+/home/ichardart/.local/bin/goose run --text "Large codebase analysis"
 
-# GPT-4o (quality fallback)
+# GPT-4o (call binary directly)
+GOOSE_DISABLE_KEYRING=1 \
 GOOSE_PROVIDER=openai \
+OPENAI_API_KEY="$OPENAI_API_KEY" \
 GOOSE_MODEL=gpt-4o \
-goose run --text "High-stakes review"
+/home/ichardart/.local/bin/goose run --text "High-stakes review"
 ```
 
 ### Model Selection Strategy
