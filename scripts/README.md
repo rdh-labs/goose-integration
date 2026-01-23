@@ -78,8 +78,31 @@ If tests fail:
 | `goose wrapper not found` | bashrc_claude not sourced | `source ~/.bashrc_claude` |
 | `API key not set` | 1Password not loaded | `source ~/.bashrc_claude` |
 | `timeout` | Provider API slow/down | Retry or check provider status |
-| `401 unauthorized` | Invalid/expired API key | Update key in 1Password |
+| `401 unauthorized` | Wrong key sent to endpoint | Verify OPENAI_API_KEY matches provider (see note below) |
 | `404 not found` | Wrong endpoint configuration | Check OPENAI_HOST/BASE_PATH |
+
+**Note on 401 errors:** If Z.ai test gets 401 but curl works, check environment variables:
+```bash
+echo "OPENAI_API_KEY: ${#OPENAI_API_KEY} chars"
+echo "ZAI_API_KEY: ${#ZAI_API_KEY} chars"
+```
+If they're different, the global OPENAI_API_KEY export (line 229 in bashrc_claude) may be pointing to the wrong provider. The validation script explicitly sets `OPENAI_API_KEY="$ZAI_API_KEY"` to avoid this issue.
+
+**Why tests call binary directly (not wrapper):**
+
+The validation script runs tests via `bash -c` (for timeout handling), which creates subshells that don't inherit bash functions. This means:
+- Wrapper function: Only available in interactive shells
+- Binary calls: Work in all contexts (subshells, scripts, CI/CD)
+
+The script validates the binary calling pattern with explicit environment variables:
+```bash
+GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /path/to/goose run ...
+```
+
+This is the same pattern users should employ in:
+- Non-interactive scripts
+- Automation/CI pipelines
+- Any context where bash functions aren't available
 
 **Integration with CI/CD:**
 
