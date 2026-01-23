@@ -11,6 +11,10 @@
 #   - source ~/.bashrc_claude (loads API keys from 1Password)
 #   - Valid API keys for providers you want to test
 #   - Funded accounts (tests make real API calls)
+#
+# Note: Tests call binary directly (not wrapper function) because bash -c
+#       subshells don't inherit functions. This validates the same pattern
+#       users would employ in scripts or automation.
 
 set -e  # Exit on error
 
@@ -55,20 +59,18 @@ echo "" | tee -a "$LOG_FILE"
 # Check prerequisites
 echo -e "${BLUE}Checking prerequisites...${NC}" | tee -a "$LOG_FILE"
 
-# Check if goose wrapper exists
-if ! type goose &>/dev/null; then
-    echo -e "${RED}✗ goose wrapper function not found${NC}" | tee -a "$LOG_FILE"
-    echo "  Run: source ~/.bashrc_claude" | tee -a "$LOG_FILE"
-    exit 1
-fi
-echo -e "${GREEN}✓ goose wrapper function found${NC}" | tee -a "$LOG_FILE"
-
 # Check if binary exists
 if [[ ! -f /home/ichardart/.local/bin/goose ]]; then
     echo -e "${RED}✗ Goose binary not found at /home/ichardart/.local/bin/goose${NC}" | tee -a "$LOG_FILE"
     exit 1
 fi
 echo -e "${GREEN}✓ Goose binary found${NC}" | tee -a "$LOG_FILE"
+
+# Check if bashrc_claude was sourced (needed for API keys)
+if ! declare -F goose &>/dev/null; then
+    echo -e "${YELLOW}⚠ goose wrapper function not found (not critical)${NC}" | tee -a "$LOG_FILE"
+    echo "  Tests call binary directly, but you should source ~/.bashrc_claude for API keys" | tee -a "$LOG_FILE"
+fi
 
 # Check API keys
 echo "" | tee -a "$LOG_FILE"
@@ -156,11 +158,11 @@ run_test() {
     fi
 }
 
-# Test 1: Z.ai via wrapper (default)
-echo -e "\n${BLUE}═══ Test 1: Z.ai GLM-4.7 (wrapper) ═══${NC}" | tee -a "$LOG_FILE"
+# Test 1: Z.ai via direct call (validates wrapper pattern)
+echo -e "\n${BLUE}═══ Test 1: Z.ai GLM-4.7 (direct) ═══${NC}" | tee -a "$LOG_FILE"
 run_test \
-    "Z.ai via wrapper" \
-    "goose run --text '$TEST_PROMPT' --no-session --quiet" \
+    "Z.ai direct call" \
+    "GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY=\"\$ZAI_API_KEY\" /home/ichardart/.local/bin/goose run --text '$TEST_PROMPT' --no-session --quiet" \
     "$EXPECTED_ANSWER"
 
 if [[ "$ZAI_ONLY" == "true" ]]; then
