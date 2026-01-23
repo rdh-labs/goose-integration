@@ -41,24 +41,24 @@ goose --help
 
 **Default provider:** Z.ai GLM-4.7 via OpenAI-compatible endpoint
 
-**Status:** ✅ WORKING (2026-01-08)
+**Status:** ✅ WORKING (2026-01-22)
 
 ```yaml
 GOOSE_PROVIDER: openai
 GOOSE_MODEL: glm-4.7
 
-OPENAI_API_KEY: ${ZAI_API_KEY}
+OPENAI_API_KEY: ${OPENAI_API_KEY}
 OPENAI_HOST: https://api.z.ai
 OPENAI_BASE_PATH: /api/coding/paas/v4/chat/completions
 ```
 
 **CRITICAL:** `OPENAI_BASE_PATH` must include `/chat/completions` suffix. Goose does not append this automatically for non-standard endpoints.
 
-**Environment variables:** If config file fails to load `${ZAI_API_KEY}`, use explicit env vars:
-```bash
-source ~/.bashrc_claude  # Loads ZAI_API_KEY from 1Password
-goose run --text "Your task"
-```
+**How authentication works:**
+1. Config file expects `OPENAI_API_KEY` as environment variable
+2. Wrapper function in `~/.bashrc_claude` sets `OPENAI_API_KEY="${OPENAI_API_KEY:-$ZAI_API_KEY}"`
+3. Defaults to Z.ai key, but respects caller-provided `OPENAI_API_KEY` for multi-model usage
+4. See [WSL2 Keyring Configuration](#wsl2-keyring-configuration) for wrapper details
 
 ### API Keys
 
@@ -92,16 +92,17 @@ DBus error: org.freedesktop.secrets was not provided by any .service files
 # Disable keyring storage (WSL2 compatibility)
 export GOOSE_DISABLE_KEYRING=1
 
-# Wrapper function sets API key from ZAI_API_KEY
+# Wrapper function sets API key (defaults to Z.ai, respects caller override)
 goose() {
-  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /home/ichardart/.local/bin/goose "$@"
+  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="${OPENAI_API_KEY:-$ZAI_API_KEY}" /home/ichardart/.local/bin/goose "$@"
 }
 ```
 
 **Why this is needed:**
 1. **Keyring caching** - Goose stores credentials in system keyring, not just environment variables
 2. **WSL2 limitation** - DBus secrets service unavailable in WSL2 environment
-3. **Wrapper function** - Ensures both `GOOSE_DISABLE_KEYRING=1` and `OPENAPI_API_KEY` are set for every invocation
+3. **Wrapper function** - Ensures both `GOOSE_DISABLE_KEYRING=1` and `OPENAI_API_KEY` are set for every invocation
+4. **Multi-model support** - Uses `${OPENAI_API_KEY:-$ZAI_API_KEY}` pattern to default to Z.ai but respect caller overrides
 
 **Verification:**
 ```bash
