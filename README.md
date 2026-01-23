@@ -75,6 +75,44 @@ source ~/.bashrc_claude  # Loads all API keys from 1Password
 # - OPENROUTER_API_KEY (Multi-model gateway)
 ```
 
+### WSL2 Keyring Configuration
+
+**IMPORTANT for WSL2 users:** Goose CLI caches credentials in the system keyring by default, which fails on WSL2:
+
+```
+error: Failed to access keyring: Platform secure storage failure:
+DBus error: org.freedesktop.secrets was not provided by any .service files
+```
+
+**Solution:** Disable keyring storage and use environment variables instead.
+
+**Configuration in `~/.bashrc_claude`:**
+
+```bash
+# Disable keyring storage (WSL2 compatibility)
+export GOOSE_DISABLE_KEYRING=1
+
+# Wrapper function sets API key from ZAI_API_KEY
+goose() {
+  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /home/ichardart/.local/bin/goose "$@"
+}
+```
+
+**Why this is needed:**
+1. **Keyring caching** - Goose stores credentials in system keyring, not just environment variables
+2. **WSL2 limitation** - DBus secrets service unavailable in WSL2 environment
+3. **Wrapper function** - Ensures both `GOOSE_DISABLE_KEYRING=1` and `OPENAPI_API_KEY` are set for every invocation
+
+**Verification:**
+```bash
+# Test that keyring is disabled and API key is passed correctly
+goose run --text "test" --no-session --quiet
+```
+
+**Expected:** Command succeeds without keyring errors.
+
+**Status:** ✅ VERIFIED WORKING (2026-01-22)
+
 ### MCP Extensions
 
 Goose integrates with 5 key MCP servers from the ecosystem:
@@ -404,6 +442,13 @@ claude-opus --print "What is 2+2? Respond with just the number."
   ```
 - **Why This Happens:** Wrapper attempts `op read` on every invocation (subprocess context), which times out. Router loads token once at startup.
 - **Status:** Model flag fixed (2026-01-08), 1Password issue unresolved - router recommended
+
+**6. Goose keyring errors on WSL2 (RESOLVED)**
+- **Error:** `Failed to access keyring: Platform secure storage failure: DBus error`
+- **Root Cause:** Goose caches credentials in system keyring, which fails on WSL2 (no DBus secrets service)
+- **Solution:** Set `GOOSE_DISABLE_KEYRING=1` and use wrapper function
+- **Configuration:** See [WSL2 Keyring Configuration](#wsl2-keyring-configuration) section above
+- **Status:** ✅ RESOLVED (2026-01-22) - Wrapper function approach verified working
 
 ### Debug Mode
 
