@@ -166,10 +166,12 @@ GOOSE_PROVIDER=gemini \
 GOOSE_MODEL=gemini-2.0-flash-exp \
 /home/ichardart/.local/bin/goose run --text "Large codebase analysis"
 
-# GPT-4o (call binary directly)
+# GPT-4o (call binary directly - must override host/path)
 GOOSE_DISABLE_KEYRING=1 \
 GOOSE_PROVIDER=openai \
 OPENAI_API_KEY="$OPENAI_API_KEY" \
+OPENAI_HOST=https://api.openai.com \
+OPENAI_BASE_PATH=/v1/chat/completions \
 GOOSE_MODEL=gpt-4o \
 /home/ichardart/.local/bin/goose run --text "High-stakes review"
 ```
