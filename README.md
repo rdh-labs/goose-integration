@@ -111,6 +111,19 @@ goose run --text "test" --no-session --quiet
 ```
 
 **Expected:** Command succeeds without keyring errors.
+If you see "DBus error" or "Failed to access keyring", the wrapper is not active.
+
+**Quick check:**
+```bash
+# Verify wrapper is loaded (should see the function)
+type goose
+
+# Verify keyring is disabled
+env | grep GOOSE_DISABLE_KEYRING
+# Should show: GOOSE_DISABLE_KEYRING=1
+```
+
+**Important:** Ensure `~/.bashrc_claude` is sourced in your shell. The wrapper function will not be available if you haven't loaded this file.
 
 **Status:** ✅ VERIFIED WORKING (2026-01-22)
 
