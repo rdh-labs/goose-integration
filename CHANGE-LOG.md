@@ -5,6 +5,66 @@
 
 ---
 
+## 2026-01-28 - Wrapper Script Fix for timeout/subshell Compatibility
+
+### Fixed
+
+**CRITICAL: `timeout goose` and subshell invocations failed with 401 errors**
+
+- **Problem:** `timeout goose run ...` returned 401 authentication errors while direct `goose run ...` worked
+- **Root Cause:** Shell wrapper functions are not inherited by subshells or external commands like `timeout`. The `timeout` command resolves `goose` via PATH to the binary, bypassing the wrapper function that sets the correct API key.
+- **Discovery:** Systematic testing revealed `goose` (wrapper function) worked, but `timeout goose` (binary via PATH) failed
+
+**Technical Details:**
+```bash
+# BEFORE: Wrapper function only works for direct calls
+goose() {
+  GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /home/ichardart/.local/bin/goose "$@"
+}
+goose run ...           # ✅ Uses wrapper, correct API key
+timeout 30 goose run ... # ❌ Bypasses wrapper, uses wrong OPENAI_API_KEY
+```
+
+**Solution:** Rename binary and create wrapper script in same PATH location:
+1. Renamed `~/.local/bin/goose` → `~/.local/bin/goose-bin`
+2. Created `~/.local/bin/goose` as wrapper script that sets env vars and calls `goose-bin`
+3. Updated `~/.bashrc_claude` function to call `goose-bin` directly
+
+**Validation (2026-01-28):**
+- ✅ Direct call: `goose run --text "..."` - Works
+- ✅ With timeout: `timeout 120 goose run --text "..."` - Works (previously failed)
+- ✅ Subshell: `(goose run ...)` - Works
+- ✅ Via bash -c: `bash -c 'goose run ...'` - Works
+- ✅ OpenAI key preserved: `$OPENAI_API_KEY` still shows `sk-proj-...` for other tools
+
+### Changed
+
+**~/.local/bin/goose** (new wrapper script):
+```bash
+#!/bin/bash
+if [[ -z "$ZAI_API_KEY" ]]; then
+    echo "Error: ZAI_API_KEY not set. Run: source ~/.bashrc_claude" >&2
+    exit 1
+fi
+exec env GOOSE_DISABLE_KEYRING=1 OPENAI_API_KEY="$ZAI_API_KEY" /home/ichardart/.local/bin/goose-bin "$@"
+```
+
+**~/.bashrc_claude:**
+- Updated `goose()` function to call `goose-bin` directly (avoids double-wrapping)
+
+### Governance
+
+**Decision:** DEC-129 (Wrapper Script Pattern for CLI Tools with Environment Overrides)
+
+**Lesson Added:** Wrapper functions only work for direct shell calls; wrapper scripts work in all contexts
+
+**Prior Art:**
+- lessons.md already documented "bash -c doesn't inherit functions"
+- validate-examples.sh already used binary+env pattern for scripts
+- Gap was interactive `timeout goose` use case
+
+---
+
 ## 2026-01-08 Evening - Critical Model Name Corrections + Authentication Issues
 
 ### Fixed
