@@ -1,9 +1,9 @@
 # Goose CLI Integration
 
 **Purpose:** Multi-model AI agent framework for development workflows
-**Version:** 1.19.0
-**Primary Model:** Z.ai GLM-4.7 (cost-effective, SWE-bench 73.8%)
-**Created:** 2026-01-07
+**Version:** 1.24.0
+**Primary Model:** Z.ai GLM-5 (cost-effective, SWE-bench 77.8%)
+**Created:** 2026-01-07 | **Updated:** 2026-02-22
 
 ---
 
@@ -15,13 +15,13 @@ Goose is Block's open-source AI agent framework built in Rust. It supports:
 - Scripted workflows + interactive sessions
 - Cost-effective model routing
 
-**Key Advantage:** GLM-4.7 costs 94% less than Claude Opus while maintaining competitive SWE-bench performance (73.8% vs Claude Sonnet 70.3%).
+**Key Advantage:** GLM-5 costs 98% less than Claude Opus while achieving near-parity SWE-bench performance (77.8% vs Opus 4.5). GLM-4.7 available as faster/cheaper fallback.
 
 ---
 
 ## Installation
 
-Goose CLI is installed globally at `~/.local/bin/goose` (v1.19.0).
+Goose CLI is installed at `~/.local/bin/goose` (wrapper script) with the binary at `~/.local/bin/goose-bin` (v1.24.0). The wrapper routes Z.ai API keys and auto-restores itself after `goose update`.
 
 ```bash
 # Verify installation
@@ -39,13 +39,13 @@ goose --help
 
 **Location:** `~/.config/goose/config.yaml`
 
-**Default provider:** Z.ai GLM-4.7 via OpenAI-compatible endpoint
+**Default provider:** Z.ai GLM-5 via OpenAI-compatible endpoint
 
 **Status:** ✅ WORKING (2026-01-22)
 
 ```yaml
 GOOSE_PROVIDER: openai
-GOOSE_MODEL: glm-4.7
+GOOSE_MODEL: glm-5
 
 OPENAI_API_KEY: ${OPENAI_API_KEY}
 OPENAI_HOST: https://api.z.ai
@@ -184,7 +184,8 @@ See `/tmp/model-selection-strategy.md` for detailed benchmark scores and use cas
 
 | Model | Best For | Cost (Input) | Context |
 |-------|----------|--------------|---------|
-| GLM-4.7 | Coding, agentic tasks | $0.16/1M | 202K |
+| GLM-5 | Coding, agentic tasks | $0.30/1M | 202K |
+| GLM-4.7 | Fast coding, cheaper | $0.16/1M | 202K |
 | DeepSeek R1 | Reasoning, planning | $0.14/1M | 128K |
 | Gemini Flash | Speed, large codebases | $0.075/1M | 1M |
 | GPT-4o | Quality checks | $2.50/1M | 128K |
@@ -204,30 +205,28 @@ Wrapper scripts provide clean model switching without environment pollution or a
 **Available commands:**
 
 ```bash
-claude-glm     # Claude Code with GLM-4.7 via Z.ai ($0.16/1M input) - SEE WORKAROUND BELOW
+claude-glm          # Claude Code with GLM-5 (default) via Z.ai
+claude-glm --4.7    # Claude Code with GLM-4.7 (faster/cheaper fallback)
 claude-opus    # Claude Code with Opus 4.5 via Anthropic ($15/1M input)
 claude         # Claude Code with default model (uses login token)
 ```
 
 **IMPORTANT: Claude GLM Wrapper Requires Pre-Loaded Token**
 
-The `claude-glm` wrapper has been fixed for model flag syntax but still requires workaround for 1Password CLI timeout issue. See [Troubleshooting](#troubleshooting) section below for details.
-
 **Usage:**
 
 ```bash
-# Start interactive session with GLM-4.7
+# Start interactive session with GLM-5 (default)
 claude-glm
 
-# One-shot query with GLM-4.7
+# Use GLM-4.7 instead (faster, cheaper)
+claude-glm --4.7
+
+# One-shot query
 claude-glm --print "Refactor this function..."
 
 # Start session with Claude Opus 4.5
 claude-opus
-
-# Compare model responses
-claude-glm --print "Explain SWE-bench in one sentence."
-claude-opus --print "Explain SWE-bench in one sentence."
 ```
 
 **Key Features:**
@@ -242,7 +241,7 @@ claude-opus --print "Explain SWE-bench in one sentence."
 - Pattern: Set env vars → `exec claude --model <model> "$@"`
 - Env vars scoped to single invocation only
 
-**Note:** Z.ai provides Anthropic-compatible endpoint (`https://api.z.ai/api/anthropic`) allowing Claude Code to use GLM-4.7 natively. Uses custom `ANTHROPIC_AUTH_TOKEN` header (not standard `ANTHROPIC_API_KEY`).
+**Note:** Z.ai provides Anthropic-compatible endpoint (`https://api.z.ai/api/anthropic`) allowing Claude Code to use GLM-5/GLM-4.7 natively. Uses `ANTHROPIC_AUTH_TOKEN` header mapped from `ZAI_API_KEY`.
 
 ### Z.ai API Endpoints
 
@@ -487,12 +486,14 @@ claude --help | grep -A 5 "model"
 
 ## Cost Comparison
 
-**GLM-4.7 vs Claude Opus 4.5:**
-- Input: $0.16/1M vs $15/1M (94% savings)
-- Output: $0.80/1M vs $75/1M (89% savings)
-- SWE-bench: 73.8% vs 70.3% (Claude Sonnet)
+**GLM-5 vs Claude Opus 4.5:**
+- Input: $0.30/1M vs $15/1M (98% savings)
+- SWE-bench: 77.8% (approaching Opus 4.5 parity)
+- 745B params (40B active MoE), 202K context
 
-**Projected ROI:** For SWE-bench style coding tasks, GLM-4.7 delivers competitive performance at <10% of Claude's cost.
+**GLM-4.7 (fallback):**
+- Input: $0.16/1M (cheaper, faster, slightly lower benchmark)
+- SWE-bench: 73.8%
 
 ---
 
@@ -551,10 +552,10 @@ cd ~/dev/infrastructure/goose-integration/scripts
 ```yaml
 goose:
   name: Goose CLI
-  version: 1.19.0
-  location: ~/.local/bin/goose
+  version: 1.24.0
+  location: ~/.local/bin/goose (wrapper), ~/.local/bin/goose-bin (binary)
   config: ~/.config/goose/config.yaml
-  primary_model: z-ai/glm-4.7
+  primary_model: z-ai/glm-5
   status: active
   integration_date: 2026-01-07
   github: https://github.com/block/goose
@@ -563,6 +564,16 @@ goose:
 ---
 
 ## Session History
+
+- **2026-02-22:** GLM-5 upgrade, security hardening, 1Password optimization
+  - Upgraded default model from GLM-4.7 to GLM-5 (77.8% SWE-bench)
+  - Fixed goose config: model name (glm-5.0→glm-5), API path (v5→v4)
+  - Restored wrapper script after v1.24.0 binary overwrote it
+  - Added post-update hook to auto-restore wrapper after `goose update`
+  - Removed 3 plaintext API keys from config (Dart, Context7, Firecrawl)
+  - Migrated all 8 API keys from sequential `op read` to single `op inject` (~5s vs ~40s)
+  - Updated `claude-glm` to default GLM-5 with `--4.7` fallback flag
+  - MCP extensions: 5→11 (added memory, gitkraken, dart, context7, firecrawl, webmcp-bridge)
 
 - **2026-01-08:** Multi-CLI wrapper scripts + LLM gateway investigation
   - Created `~/bin/claude-glm` and `~/bin/claude-opus` wrapper scripts (Claude Code)
